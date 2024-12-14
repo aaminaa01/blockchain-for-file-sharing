@@ -61,7 +61,7 @@ class Blockchain:
             previous_proof = previous_block['proof']
             proof = block['proof']
             hash_operation = hashlib.sha256(str(proof**2 - previous_proof**2).encode()).hexdigest()
-            if hash_operation[:4] != '0000':
+            if hash_operation[:4] != '000000':
                 return False
             previous_block = block
             block_index += 1

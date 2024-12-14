@@ -83,7 +83,7 @@ def retrieve_from_hash(file_hash, file_key):
     client = ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')
     file_content = client.cat(file_hash)
     file_path = os.path.join(app.config['DOWNLOAD_FOLDER'], file_hash)
-    # print(file_path)
+    print(file_path)
     # Save the encrypted content to a temporary file
     encrypted_temp_file = file_path + "_encrypted"
     with open(encrypted_temp_file, 'wb') as f:
@@ -276,7 +276,7 @@ def retrieve_file():
             error_flag = False
             try:
                 # Retrieve and decrypt the file
-                file_path = retrieve_from_hash(file_hash, file_key)
+                file_path, mime_type = retrieve_from_hash(file_hash, file_key)
 
                 # Schedule file cleanup after serving it
                 @after_this_request

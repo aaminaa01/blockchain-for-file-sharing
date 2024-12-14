@@ -41,7 +41,7 @@ class Blockchain:
         check_proof = False
         while check_proof is False:
             hash_operation = hashlib.sha256(str(new_proof**2 - previous_proof**2).encode()).hexdigest()
-            if hash_operation[:4] == '0000':
+            if hash_operation[:4] == '000000':
                 check_proof = True
             else:
                 new_proof += 1
@@ -98,6 +98,26 @@ class Blockchain:
             self.chain = longest_chain
             return True
         return False
+
+
+def calculate_merkle_root(hashes):
+    """
+    Calculate the Merkle root from a list of hashes.
+    """
+    if not hashes:
+        return None
+
+    while len(hashes) > 1:
+        temp_hashes = []
+        for i in range(0, len(hashes), 2):
+            if i + 1 < len(hashes):
+                combined = hashes[i] + hashes[i + 1]
+            else:
+                combined = hashes[i]  # If odd, take the last hash as it is.
+            temp_hashes.append(hashlib.sha256(combined.encode()).hexdigest())
+        hashes = temp_hashes
+
+    return hashes[0]  # The final root hash.
 
 # Part 2 - Mining our Blockchain
 
