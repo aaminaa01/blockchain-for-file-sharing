@@ -15,18 +15,20 @@ class Blockchain:
         # self.shared_files = [] 
         # self.sender = [] ###########
         # self.receiver = [] ##########
-        self.create_block(proof = 1, previous_hash = '0' , sender = 'N.A' , receiver = 'N.A' , file_hash = 'N.A') ##########
+        self.create_block(proof = 1, previous_hash = '0' , sender = 'N.A' , receiver = 'N.A' , file_hash = 'N.A', merkle_root_hash='N.A') ##########
         self.nodes = set()
         self.nodes.add("127.0.0.1:5111")
     
-    def create_block(self, proof, previous_hash, sender, receiver, file_hash):
+    def create_block(self, proof, previous_hash, sender, receiver, file_hash, merkle_root_hash):
         block = {'index': len(self.chain) + 1,
                  'timestamp': str(time.strftime("%d %B %Y , %I:%M:%S %p", time.localtime())),  # d-date, B-Month, Y-Year ,I-Hours in 12hr format, M-Minutes, S-secnods, p-A.M or P.M
                  'proof': proof,
                  'previous_hash': previous_hash,
                  'sender': sender, #########
                  'receiver':receiver, #########
-                 'shared_files': file_hash}
+                 'shared_files': file_hash,
+                 'merkle_root': merkle_root_hash}
+        print('merkle_root in block:',merkle_root_hash)
         # self.shared_files = []
         # self.sender = [] #########
         # self.receiver = [] ########
@@ -67,7 +69,7 @@ class Blockchain:
             block_index += 1
         return True
     
-    def add_file(self, sender, receiver, file_hash):
+    def add_file(self, sender, receiver, file_hash,merkle_root_hash):
         # self.sender.append({'sender': sender}) #########
         # self.receiver.append({'receiver': receiver}) ##########
         # self.shared_files.append({'file_hash': file_hash})
@@ -79,7 +81,7 @@ class Blockchain:
         previous_proof = previous_block['proof']
         proof = self.proof_of_work(previous_proof)
         previous_hash = self.hash(previous_block)
-        self.create_block(proof, previous_hash, sender, receiver, file_hash)
+        self.create_block(proof, previous_hash, sender, receiver, file_hash, merkle_root_hash)
         return index
     
     def replace_chain(self):
@@ -99,3 +101,21 @@ class Blockchain:
             return True
         return False
 
+def calculate_merkle_root(hashes):
+    """
+    Calculate the Merkle root from a list of hashes.
+    """
+    if not hashes:
+        return None
+
+    while len(hashes) > 1:
+        temp_hashes = []
+        for i in range(0, len(hashes), 2):
+            if i + 1 < len(hashes):
+                combined = hashes[i] + hashes[i + 1]
+            else:
+                combined = hashes[i]  # If odd, take the last hash as it is.
+            temp_hashes.append(hashlib.sha256(combined.encode()).hexdigest())
+        hashes = temp_hashes
+
+    return hashes[0]  # The final root hash.
