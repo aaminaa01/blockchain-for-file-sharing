@@ -239,7 +239,7 @@ def add_file():
                     
                     # Generate chunk hashes
                     encrypt_file(file_path, file_key)  # Encrypt before chunking
-                    chunk_hashes = get_file_chunks(file_path + ".aes")  # Use encrypted file
+                    chunk_hashes = get_file_chunks(file_path) 
                     
                     print("Chunk hashes: ", chunk_hashes)
                     merkle_root = calculate_merkle_root(chunk_hashes)
@@ -275,7 +275,7 @@ def verify_file_integrity(file_path, stored_merkle_root, chunk_size=1024 * 1024)
     """
     Verify the file's integrity by comparing its Merkle root.
     """
-    chunk_hashes = get_file_chunks(file_path + ".aes", chunk_size)
+    chunk_hashes = get_file_chunks(file_path, chunk_size)
     calculated_merkle_root = calculate_merkle_root(chunk_hashes)
     print("calculated_merkle_root: ", calculated_merkle_root)
     print("stored_merkle_root: ", stored_merkle_root)
