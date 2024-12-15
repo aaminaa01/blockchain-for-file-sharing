@@ -48,8 +48,12 @@ def hash_user_file(user_file, file_key):
     client = ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')
     response = client.add(encrypted_file_path)
     file_hash = response['Hash']
-    os.remove(encrypted_file_path) # Remove the encrypted file after uploading to IPFS
+
+    #remove the encrypted file
+    os.remove(encrypted_file_path)
+
     return file_hash
+
 
 def hash_merkle_root(merkle_root):
     print("Hashing Merkle root...")
@@ -68,23 +72,6 @@ def hash_merkle_root(merkle_root):
     # merkle_root_hash = response['Hash']
     # return merkle_root_hash
 
-# def retrieve_from_hash(file_hash, file_key):
-#     client = ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')
-#     file_content = client.cat(file_hash)
-#     file_path = os.path.join(app.config['DOWNLOAD_FOLDER'], file_hash)
-#     user_file = open(file_path, 'ab+')
-#     user_file.write(file_content)
-#     user_file.close()
-#     decrypt_file(file_path, file_key)
-#     with open(file_path, 'rb') as f:
-#         lines = f.read().splitlines()
-#         last_line = lines[-1]
-#     user_file.close()
-#     file_extension = last_line
-#     saved_file = file_path + '.' + file_extension.decode()
-#     os.rename(file_path, saved_file)
-#     print(saved_file)
-#     return saved_file
 
 def detect_file_type(file_path):
     """Detect the MIME type using python-magic."""
@@ -99,8 +86,10 @@ def detect_file_type(file_path):
 
 def retrieve_merkle_root_from_ipfs(merkle_root_ipfs_hash):
     client = ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')
-    merkle_root_content = client.cat(merkle_root_ipfs_hash)  # Retrieve the file content from IPFS
-    return merkle_root_content.decode('utf-8')  # Decode the content to get the Merkle root as a string
+    # Retrieve the file content from IPFS
+    merkle_root_content = client.cat(merkle_root_ipfs_hash)  
+    # Decode the content to get the Merkle root as a string
+    return merkle_root_content.decode('utf-8')  
 
 def retrieve_from_hash(file_hash, file_key):
     print("Retrieving file from IPFS...")
@@ -110,6 +99,7 @@ def retrieve_from_hash(file_hash, file_key):
     print("Retrieved file content")
     file_path = os.path.join(app.config['DOWNLOAD_FOLDER'], file_hash)
     print(file_path)
+
     # Save the encrypted content to a temporary file
     encrypted_temp_file = file_path + "_encrypted"
     with open(encrypted_temp_file, 'wb') as f:
@@ -162,52 +152,6 @@ def upload():
 def download():
     return render_template('download.html' , message = "Welcome!")
 
-# @app.route('/add_file', methods=['POST'])
-# def add_file():
-    
-#     is_chain_replaced = blockchain.replace_chain()
-
-#     if is_chain_replaced:
-#         print('The nodes had different chains so the chain was replaced by the longest one.')
-#     else:
-#         print('All good. The chain is the largest one.')
-
-#     if request.method == 'POST':
-#         error_flag = True
-#         if 'file' not in request.files:
-#             message = 'No file part'
-#         else:
-#             user_file = request.files['file']
-#             if user_file.filename == '':
-#                 message = 'No file selected for uploading'
-
-#             if user_file and allowed_file(user_file.filename):
-#                 error_flag = False
-#                 filename = secure_filename(user_file.filename)
-#                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-#                 user_file.save(file_path)
-#                 append_file_extension(user_file, file_path)
-#                 sender = request.form['sender_name']
-#                 receiver = request.form['receiver_name']
-#                 file_key = request.form['file_key']
-#                 try:
-#                     hashed_output1 = hash_user_file(file_path, file_key)
-#                     index = blockchain.add_file(sender, receiver, hashed_output1)
-#                 except Exception as err:
-#                     message = str(err)
-#                     error_flag = True
-#                     if "ConnectionError:" in message:
-#                         message = "Gateway down or bad Internet!"
-#                 # message = f'File successfully uploaded'
-#                 # message2 =  f'It will be added to Block {index-1}'
-#             else:
-#                 error_flag = True
-#                 message = 'Allowed file types are txt, pdf, png, jpg, jpeg, gif'
-    
-#         if error_flag == True:
-#             return render_template('upload.html' , message = message)
-#         else:
-#             return render_template('upload.html' , message = "File succesfully uploaded")
 
 @app.route('/add_file', methods=['POST'])
 def add_file():
@@ -280,42 +224,6 @@ def verify_file_integrity(file_path, stored_merkle_root, chunk_size=1024 * 1024)
     print("calculated_merkle_root: ", calculated_merkle_root)
     print("stored_merkle_root: ", stored_merkle_root)
     return calculated_merkle_root == stored_merkle_root
-
-
-# @app.route('/retrieve_file', methods=['POST'])
-# def retrieve_file():
-
-#     is_chain_replaced = blockchain.replace_chain()
-
-#     if is_chain_replaced:
-#         print('The nodes had different chains so the chain was replaced by the longest one.')
-#     else:
-#         print('All good. The chain is the largest one.')
-
-#     if request.method == 'POST':
-
-#         error_flag = True
-
-#         if request.form['file_hash'] == '':
-#             message = 'No file hash entered.'
-#         elif request.form['file_key'] == '':
-#             message = 'No file key entered.'
-#         else:
-#             error_flag = False
-#             file_key = request.form['file_key']
-#             file_hash = request.form['file_hash']
-#             try:
-#                 file_path = retrieve_from_hash(file_hash, file_key)
-#             except Exception as err:
-#                 message = str(err)
-#                 error_flag = True
-#                 if "ConnectionError:" in message:
-#                     message = "Gateway down or bad Internet!"
-
-#         if error_flag == True:
-#             return render_template('download.html' , message = message)
-#         else:
-#             return render_template('download.html' , message = "File successfully downloaded")
 
 @app.route('/retrieve_file', methods=['POST'])
 def retrieve_file():
