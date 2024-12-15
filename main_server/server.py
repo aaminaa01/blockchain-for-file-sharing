@@ -60,24 +60,6 @@ def get_file_chunks(file_path, chunk_size=1024 * 1024):
             chunk_hashes.append(chunk_hash)
     return chunk_hashes
 
-# def retrieve_from_hash(file_hash, file_key):
-#     client = ipfshttpclient.connect('/dns/ipfs.infura.io/tcp/5001/https')
-#     file_content = client.cat(file_hash)
-#     file_path = os.path.join(app.config['DOWNLOAD_FOLDER'], file_hash)
-#     user_file = open(file_path, 'ab+')
-#     user_file.write(file_content)
-#     user_file.close()
-#     decrypt_file(file_path, file_key)
-#     with open(file_path, 'rb') as f:
-#         lines = f.read().splitlines()
-#         last_line = lines[-1]
-#     user_file.close()
-#     file_extension = last_line
-#     saved_file = file_path + '.' + file_extension.decode()
-#     os.rename(file_path, saved_file)
-#     print(saved_file)
-#     return saved_file
-
 def detect_file_type(file_path):
     """Detect the MIME type using python-magic."""
     mime = magic.Magic(mime=True)
@@ -233,40 +215,6 @@ def add_file():
         else:
             return render_template('upload.html' , message = "File succesfully uploaded")
 
-# @app.route('/retrieve_file', methods=['POST'])
-# def retrieve_file():
-
-#     is_chain_replaced = blockchain.replace_chain()
-
-#     if is_chain_replaced:
-#         print('The nodes had different chains so the chain was replaced by the longest one.')
-#     else:
-#         print('All good. The chain is the largest one.')
-
-#     if request.method == 'POST':
-
-#         error_flag = True
-
-#         if request.form['file_hash'] == '':
-#             message = 'No file hash entered.'
-#         elif request.form['file_key'] == '':
-#             message = 'No file key entered.'
-#         else:
-#             error_flag = False
-#             file_key = request.form['file_key']
-#             file_hash = request.form['file_hash']
-#             try:
-#                 file_path = retrieve_from_hash(file_hash, file_key)
-#             except Exception as err:
-#                 message = str(err)
-#                 error_flag = True
-#                 if "ConnectionError:" in message:
-#                     message = "Gateway down or bad Internet!"
-
-#         if error_flag == True:
-#             return render_template('download.html' , message = message)
-#         else:
-#             return render_template('download.html' , message = "File successfully downloaded")
 
 @app.route('/retrieve_file', methods=['POST'])
 def retrieve_file():
