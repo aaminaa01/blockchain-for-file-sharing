@@ -1,7 +1,13 @@
 from flask import Flask
 
-DOWNLOAD_FOLDER = r"/Users/navairarehman/Documents/Semester/Information Security /blockchain-for-file-sharing/client_server/downloads"
-TEMP_FOLDER = r"/Users/navairarehman/Documents/Semester/Information Security /blockchain-for-file-sharing/client_server/temp_folder"
+# DOWNLOAD_FOLDER = r"/Users/navairarehman/Documents/Semester/Information Security /blockchain-for-file-sharing/client_server/downloads"
+# TEMP_FOLDER = r"/Users/navairarehman/Documents/Semester/Information Security /blockchain-for-file-sharing/client_server/temp_folder"
+
+
+DOWNLOAD_FOLDER = r"C:\Users\PMYLS\Desktop\7th semester\IS\blockchain-for-file-sharing\main_server\downloads"
+TEMP_FOLDER = r"C:\Users\PMYLS\Desktop\7th semester\IS\blockchain-for-file-sharing\main_server\temp_folder"
+
+
 app = Flask(__name__)
 app.secret_key = "secret key"
 app.config['TEMP_FOLDER'] = TEMP_FOLDER
