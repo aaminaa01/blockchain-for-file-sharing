@@ -14,6 +14,10 @@ import requests
 import socketio
 import hashlib
 import magic
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from Crypto.Protocol.KDF import scrypt
+from os import urandom
 
 # The package requests is used in the 'hash_user_file' and 'retrieve_from hash' functions to send http post requests.
 # Notice that 'requests' is different than the package 'request'.
@@ -35,25 +39,94 @@ def append_file_extension(uploaded_file, file_path):
     user_file.close()
 
 def decrypt_file(file_path, file_key):
-    encrypted_file = file_path + ".aes"
-    os.rename(file_path, encrypted_file)
-    pyAesCrypt.decryptFile(encrypted_file, file_path,  file_key, app.config['BUFFER_SIZE'])
+    # Read the encrypted file
+    with open(file_path, 'rb') as f:
+        file_data = f.read()
+
+    # Extract salt (16 bytes), IV (16 bytes), and encrypted data from the file
+    salt = file_data[:16]
+    iv = file_data[16:32]
+    encrypted_data = file_data[32:]
+
+    # Derive the key using scrypt (using the file_key and the extracted salt)
+    key = scrypt(file_key.encode(), salt, key_len=32, N=2**14, r=8, p=1)
+
+    # Initialize AES cipher with CBC mode, derived key, and IV
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+
+    # Decrypt the data
+    decrypted_data = unpad(cipher.decrypt(encrypted_data), AES.block_size)
+
+    # Write the decrypted data to a new file (e.g., remove '.aes' extension)
+    decrypted_file_path = file_path.replace('.aes', '_decrypted')
+    with open(decrypted_file_path, 'wb') as f:
+        f.write(decrypted_data)
+
+    print("File has been decrypted")
+    return decrypted_file_path
+
+# def decrypt_file(file_path, file_key):
+#     encrypted_file = file_path + ".aes"
+#     os.rename(file_path, encrypted_file)
+#     pyAesCrypt.decryptFile(encrypted_file, file_path,  file_key, app.config['BUFFER_SIZE'])
+
+# def encrypt_file(file_path, file_key):
+#     pyAesCrypt.encryptFile(file_path, file_path + ".aes",  file_key, app.config['BUFFER_SIZE'])
 
 def encrypt_file(file_path, file_key):
-    pyAesCrypt.encryptFile(file_path, file_path + ".aes",  file_key, app.config['BUFFER_SIZE'])
+    # Generate a random salt (16 bytes) and IV (16 bytes)
+    salt = urandom(16)
+    iv = urandom(16)
+
+    # Derive a key using scrypt from the password (file_key) and salt
+    key = scrypt(file_key.encode(), salt, key_len=32, N=2**14, r=8, p=1)
+
+    # Initialize AES cipher with CBC mode and the derived key and IV
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+
+    # Read the file data
+    with open(file_path, 'rb') as f:
+        data = f.read()
+
+    # Pad the data to make it a multiple of AES block size
+    padded_data = pad(data, AES.block_size)
+
+    # Encrypt the data
+    encrypted_data = cipher.encrypt(padded_data)
+
+    # Write the salt, IV, and encrypted data to the file
+    encrypted_file_path = file_path + ".aes"
+    with open(encrypted_file_path, 'wb') as f:
+        f.write(salt + iv + encrypted_data)
+    print("file has been encrypted")
+
+    return encrypted_file_path
+
+# def hash_user_file(user_file, file_key):
+#     encrypt_file(user_file, file_key)
+#     encrypted_file_path = user_file + ".aes"
+#     client = ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')
+#     response = client.add(encrypted_file_path)
+#     file_hash = response['Hash']
+
+#     #remove the encrypted file
+#     os.remove(encrypted_file_path)
+
+#     return file_hash
 
 def hash_user_file(user_file, file_key):
-    encrypt_file(user_file, file_key)
-    encrypted_file_path = user_file + ".aes"
+    # Encrypt the file with the advanced encryption
+    encrypted_file_path = encrypt_file(user_file, file_key)
+
+    # Add the encrypted file to IPFS
     client = ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')
     response = client.add(encrypted_file_path)
     file_hash = response['Hash']
 
-    #remove the encrypted file
+    # Clean up the encrypted file
     os.remove(encrypted_file_path)
 
     return file_hash
-
 
 def hash_merkle_root(merkle_root):
     print("Hashing Merkle root...")
@@ -91,39 +164,72 @@ def retrieve_merkle_root_from_ipfs(merkle_root_ipfs_hash):
     # Decode the content to get the Merkle root as a string
     return merkle_root_content.decode('utf-8')  
 
-def retrieve_from_hash(file_hash, file_key):
-    print("Retrieving file from IPFS...")
-    client = ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')
-    print("Connected to IPFS")
-    file_content = client.cat(file_hash)
-    print("Retrieved file content")
-    file_path = os.path.join(app.config['DOWNLOAD_FOLDER'], file_hash)
-    print(file_path)
+# def retrieve_from_hash(file_hash, file_key):
+#     print("Retrieving file from IPFS...")
+#     client = ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')
+#     print("Connected to IPFS")
+#     file_content = client.cat(file_hash)
+#     print("Retrieved file content")
+#     file_path = os.path.join(app.config['DOWNLOAD_FOLDER'], file_hash)
+#     print(file_path)
 
+#     # Save the encrypted content to a temporary file
+#     encrypted_temp_file = file_path + "_encrypted"
+#     with open(encrypted_temp_file, 'wb') as f:
+#         f.write(file_content)
+    
+#     # Decrypt the file to the original file path
+#     decrypted_file_path = file_path  # Final decrypted file path
+#     pyAesCrypt.decryptFile(encrypted_temp_file, decrypted_file_path, file_key, app.config['BUFFER_SIZE'])
+    
+#     # Remove the encrypted temporary file after decryption
+#     os.remove(encrypted_temp_file)
+
+#     # Detect MIME type
+#     mime_type = detect_file_type(decrypted_file_path)
+    
+#     # Determine the file extension from MIME type
+#     extension = mime_type.split('/')[1]  # Example: 'image/png' -> 'png'
+#     final_file_path = decrypted_file_path + '.' + extension
+
+#     # Rename the file with the correct extension
+#     os.rename(decrypted_file_path, final_file_path)
+    
+#     return final_file_path, mime_type
+
+def retrieve_from_hash(file_hash, file_key):
+    client = ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')
+    file_content = client.cat(file_hash)
+    file_path = os.path.join(app.config['DOWNLOAD_FOLDER'], file_hash)
+    
     # Save the encrypted content to a temporary file
     encrypted_temp_file = file_path + "_encrypted"
     with open(encrypted_temp_file, 'wb') as f:
         f.write(file_content)
     
-    # Decrypt the file to the original file path
-    decrypted_file_path = file_path  # Final decrypted file path
-    pyAesCrypt.decryptFile(encrypted_temp_file, decrypted_file_path, file_key, app.config['BUFFER_SIZE'])
-    
-    # Remove the encrypted temporary file after decryption
-    os.remove(encrypted_temp_file)
+    try:
+        # Decrypt the file using the updated decryption function
+        decrypted_file_path = decrypt_file(encrypted_temp_file, file_key)
+        
+        # Remove the encrypted temporary file after decryption
+        # os.remove(encrypted_temp_file)
 
-    # Detect MIME type
-    mime_type = detect_file_type(decrypted_file_path)
-    
-    # Determine the file extension from MIME type
-    extension = mime_type.split('/')[1]  # Example: 'image/png' -> 'png'
-    final_file_path = decrypted_file_path + '.' + extension
+        # Detect MIME type
+        mime_type = detect_file_type(decrypted_file_path)
 
-    # Rename the file with the correct extension
-    os.rename(decrypted_file_path, final_file_path)
-    
-    return final_file_path, mime_type
+        # Determine the file extension from MIME type
+        extension = mime_type.split('/')[1]  # Example: 'image/png' -> 'png'
+        final_file_path = decrypted_file_path + '.' + extension
 
+        # Rename the file with the correct extension
+        os.rename(decrypted_file_path, final_file_path)
+    
+        return final_file_path, mime_type
+
+    except Exception as err:
+        # Handle any decryption errors
+        os.remove(encrypted_temp_file)  # Clean up the temporary file
+        raise err
 
 def get_file_chunks(file_path, chunk_size=1024 * 1024):
     """
